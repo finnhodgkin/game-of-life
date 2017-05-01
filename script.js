@@ -106,9 +106,27 @@ const drawLife = (lifeObj) => {
 }
 
 const seed = {}
+// LINE GEN
+
+// for (let i = 0; i < c.height; i++) {
+//   let row = []
+//   let no = false;
+//   for (let j = 0; j < c.width; j++) {
+//     if (i === 250 || i === 251) {
+//       row.push(j)
+//       no = true
+//     }
+//   }
+//   if (no) {
+//     console.log('happening');
+//     seed[i] = row
+//   }
+// }
+
+//RANDOM GEN
 const chance = 0.05
 for (let i = 0; i < c.height; i++) {
-  let row = []
+  const row = []
   for (let j = 0; j < c.width; j++) {
     if (Math.random() <= chance) {
       row.push(j)
