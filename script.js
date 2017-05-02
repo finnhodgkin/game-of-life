@@ -4,16 +4,16 @@ const ctx = c.getContext('2d');
 const checkNeighboursX = (row, x, self) => {
   let neighbours = 0
   // If at the edge then check the other side
-  if (x-1 > 0) {
+  if (x-1 >= 0) {
     neighbours += row.indexOf(x - 1) !== -1 ? 1 : 0
   } else {
-    neighbours += row.indexOf(c.width - 1) !== -1 ? 1 : 0
+    neighbours += row.indexOf(c.width-1) !== -1 ? 1 : 0
   }
   if (row.indexOf(x) !== -1 && !self) {
     neighbours++
   }
   // If at the edge then check the other side
-  if (x+1 < c.width) {
+  if (x+1 <= c.width-1) {
     neighbours += row.indexOf(x + 1) !== -1 ? 1 : 0
   } else {
     neighbours += row.indexOf(0) !== -1 ? 1 : 0
@@ -25,16 +25,16 @@ const countNeighbours = (aliveList, x, y) => {
   let neighbours = 0
   if (y > 0 && aliveList[y - 1]) {
     neighbours += checkNeighboursX(aliveList[y - 1], x)
-  } else if (y < 0 && aliveList[c.height]){
-    neighbours += checkNeighboursX(aliveList[c.height], x)
+  } else if (y <= 0 && aliveList[c.height-1]){
+    neighbours += checkNeighboursX(aliveList[c.height-1], x)
   }
   if (aliveList[y]) {
     neighbours += checkNeighboursX(aliveList[y], x, true)
   }
-  if (y < c.height && aliveList[y + 1]) {
+  if (y < (c.height-1) && aliveList[y + 1]) {
     neighbours += checkNeighboursX(aliveList[y + 1], x)
-  } else if (y > c.height && aliveList[c.height]) {
-    neighbours += checkNeighboursX(aliveList[y + 1], x)
+  } else if (y >= c.height-1 && aliveList[0]) {
+    neighbours += checkNeighboursX(aliveList[0], x)
   }
   return neighbours
 }
@@ -59,9 +59,9 @@ const tick = (aliveObj) => {
   Object.keys(aliveObj).forEach((y) => {
     aliveObj[y].forEach(x => {
       xLow = (x-1 >= 0) ? x - 1 : c.width - 1
-      xHigh = (x+1 <= c.width) ? x + 1 : 0
-      yLow = (Number(y)-1 >= 0) ? Number(y)-1 : c.height - 1
-      yHigh = (Number(y)+1 <= c.height) ? Number(y)+1 : 0
+      xHigh = (x+1 <= c.width-1) ? x + 1 : 0
+      yLow = (Number(y)-1 >= 0) ? Number(y)-1 : c.height-1
+      yHigh = (Number(y)+1 <= c.height-1) ? Number(y)+1 : 0
 
       arrayToCheck.push(`${xLow} ${yLow}`,
         `${x} ${yLow}`,
@@ -124,7 +124,7 @@ const seed = {}
 // }
 
 //RANDOM GEN
-const chance = 0.05
+const chance = .05
 for (let i = 0; i < c.height; i++) {
   const row = []
   for (let j = 0; j < c.width; j++) {
@@ -143,4 +143,4 @@ let alive = tick(seed)
 setInterval(() => {
   drawLife(alive)
   alive = tick(alive)
-}, 10);
+}, 1);
