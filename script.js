@@ -1,67 +1,103 @@
-const c = document.getElementById('myCanvas');
-const ctx = c.getContext('2d');
-
-const checkNeighboursX = (row, x, self) => {
+/**
+ * @description Count neighbours to left and right, or if 'x' is next to the
+ * edge then check the other side
+ * @param  {Array} row        Array of numbers representing alive cells
+ * @param  {Number} x         X position to check from
+ * @param  {Boolean} isOwnRow Should 'x' be included in the count
+ * @return {Number}           The number of currently alive neighbours
+ */
+const checkNeighboursX = (row, x, isOwnRow, width) => {
   let neighbours = 0
-  // If at the edge then check the other side
-  if (x-1 >= 0) {
-    neighbours += row.indexOf(x - 1) !== -1 ? 1 : 0
-  } else {
-    neighbours += row.indexOf(c.width-1) !== -1 ? 1 : 0
-  }
-  if (row.indexOf(x) !== -1 && !self) {
-    neighbours++
-  }
-  // If at the edge then check the other side
-  if (x+1 <= c.width-1) {
-    neighbours += row.indexOf(x + 1) !== -1 ? 1 : 0
-  } else {
-    neighbours += row.indexOf(0) !== -1 ? 1 : 0
-  }
+
+  // Check if position to the left is at the edge of the array
+  neighbours += (x - 1 >= 0) ?
+    // Check if the neighbour to the left exists
+    (row.indexOf(x - 1) !== -1) ? 1 : 0 :
+    // If the neighbour is less than 0 check the other end of the array
+    (row.indexOf(width) !== -1) ? 1 : 0
+
+  // Only check the middle neighbour if isOwnRow is false
+  neighbours += (!isOwnRow && row.indexOf(x) !== -1) ? 1 : 0
+
+  // Check if position to the right is at the edge of the array
+  neighbours += (x + 1 <= width) ?
+    // Check if the neighbour to the right exists
+    (row.indexOf(x + 1) !== -1) ? 1 : 0 :
+    // If right neighbour is more than max width, check other end of row array
+    (row.indexOf(0) !== -1) ? 1 : 0
+
   return neighbours
 }
 
-const countNeighbours = (aliveList, x, y) => {
+/**
+ * @description Count alive neighbours to the left and right as well as above
+ * and below
+ * @param  {Object} alive Object with keys of rows and values (array) of cols
+ * @param  {Number} x     X position to check from
+ * @param  {Number} y     Y position to check from
+ * @return {Number}       Total number of alive neighbours exactly 1 step away
+ */
+const countNeighbours = (alive, x, y, width, height) => {
   let neighbours = 0
-  if (y > 0 && aliveList[y - 1]) {
-    neighbours += checkNeighboursX(aliveList[y - 1], x)
-  } else if (y <= 0 && aliveList[c.height-1]){
-    neighbours += checkNeighboursX(aliveList[c.height-1], x)
-  }
-  if (aliveList[y]) {
-    neighbours += checkNeighboursX(aliveList[y], x, true)
-  }
-  if (y < (c.height-1) && aliveList[y + 1]) {
-    neighbours += checkNeighboursX(aliveList[y + 1], x)
-  } else if (y >= c.height-1 && aliveList[0]) {
-    neighbours += checkNeighboursX(aliveList[0], x)
-  }
+
+  // Check row above is greater than zero and has at least one live cell
+  neighbours += (y > 0 && alive[y - 1]) ?
+    // Count number of alive neighbours in row above
+    checkNeighboursX(alive[y - 1], x, width) :
+    // If row above is less than zero and has at least one live cell
+    (y <= 0 && alive[height]) ?
+    // Count number of alive neighbours in row on other end
+    checkNeighboursX(alive[height], x, width) : 0
+
+  // If own row exists then check neighbours but not self
+  neighbours += alive[y] ? checkNeighboursX(alive[y], x, true, width) : 0
+
+  // Opposite of above
+  neighbours += (y < height && alive[y + 1]) ?
+    checkNeighboursX(alive[y + 1], x, width) :
+    (y >= height-1 && alive[0]) ?
+    checkNeighboursX(alive[0], x, width) : 0
+
   return neighbours
 }
 
-const isCellAlive = (aliveList, x, y) => {
-  return aliveList[y] ?
-    aliveList[y].indexOf(x) !== -1 :
-    false
-}
+/**
+ * Check if a cell is live
+ * @param  {Object}  alive Object with keys of rows and values (arrays) of cols
+ * @param  {Number}  x     x position
+ * @param  {Number}  y     y position
+ * @return {Boolean}       Is alive?
+ */
+const isCellAlive = (alive, x, y) => alive[y] ?
+  alive[y].indexOf(x) !== -1 : false
 
+/**
+ * Should cell be alive in the next round?
+ * @param  {Object} alive Keys: y positions, values: arrays of live x positions
+ * @param  {Number} x     X position
+ * @param  {Number} y     Y position
+ * @return {Boolean}      Should the cell be alive next round?
+ */
 const shouldCellLive = (...args) => {
-  const count = countNeighbours(...args)
-  const alive = isCellAlive(...args)
-
-  return count === 3 ? true :
-    alive && count === 2 ? true :
-    false
+  // Check the neighbour count and whether the cell is alive
+  const [count, alive] = [countNeighbours(...args), isCellAlive(...args)]
+  // Cell lives if count is 3 or count is 2 and cell is currently living
+  return (count === 3) ? true : (alive && count === 2) ? true : false
 }
 
-const tick = (aliveObj) => {
+/**
+ * Build the tick's living cell coordinates
+ * @param  {Object} alive Keys: y positions, values: arrays of live x positions
+ * @return {Object} Keys: y positions, values: arrays of live x positions
+ */
+const tick = (alive, width, height) => {
   const arrayToCheck = []
-  Object.keys(aliveObj).forEach((y) => {
-    aliveObj[y].forEach(x => {
-      xLow = (x-1 >= 0) ? x - 1 : c.width - 1
-      xHigh = (x+1 <= c.width-1) ? x + 1 : 0
-      yLow = (Number(y)-1 >= 0) ? Number(y)-1 : c.height-1
-      yHigh = (Number(y)+1 <= c.height-1) ? Number(y)+1 : 0
+  Object.keys(alive).forEach((y) => {
+    alive[y].forEach(x => {
+      xLow = (x-1 >= 0) ? x - 1 : width
+      xHigh = (x+1 <= width) ? x + 1 : 0
+      yLow = (Number(y)-1 >= 0) ? Number(y)-1 : height
+      yHigh = (Number(y)+1 <= height) ? Number(y)+1 : 0
 
       arrayToCheck.push(`${xLow} ${yLow}`,
         `${x} ${yLow}`,
@@ -79,8 +115,7 @@ const tick = (aliveObj) => {
 
   const nextTick = [...setToCheck].reduce((acc, coord) => {
     const [x, y] = coord.split(' ')
-
-    if (shouldCellLive(aliveObj, Number(x), Number(y))) {
+    if (shouldCellLive(alive, Number(x), Number(y), width, height)) {
       if (acc[y]) {
         acc[y].push(Number(x))
       } else {
@@ -93,54 +128,33 @@ const tick = (aliveObj) => {
   return nextTick
 }
 
-const drawLife = (lifeObj) => {
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, c.width, c.height)
-  // Draw each life as a pixel
-  Object.keys(lifeObj).forEach((y) => {
-    lifeObj[y].forEach(x => {
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(Number(x), Number(y), 1, 1)
-    })
+/**
+ * Generate a random seed Object
+ * @param  {Number} width
+ * @param  {Number} height
+ * @param  {Number} chance A number from 0-1 that determines if cell is live
+ * @return {Object}        Keys: y positions, values: arrays of live x positions
+ */
+const generateRandomSeed = (width, height, chance) => {
+  // Initial an array of rows
+  return Array.from({length: height}, _ => {
+    // Fill each row with an initial array of numbered cols
+    return Array.from({length: width}, (x, index) => index)
+      // Filter the columns by chance
+      .filter(x => Math.random() <= chance)
   })
-}
+  // Reduce rows and cols to an object containing rows with live cells
+  .reduce((acc, row, index) => {
+    if (row.length) acc[index] = row
+    return acc
+  }, {})
+};
 
-const seed = {}
-// LINE GEN
 
-// for (let i = 0; i < c.height; i++) {
-//   let row = []
-//   let no = false;
-//   for (let j = 0; j < c.width; j++) {
-//     if (i === 250 || i === 251) {
-//       row.push(j)
-//       no = true
-//     }
-//   }
-//   if (no) {
-//     console.log('happening');
-//     seed[i] = row
-//   }
-// }
+if (typeof module !== 'undefined') {
+  module.exports = {
+    checkNeighboursX,
+    isCellAlive,
 
-//RANDOM GEN
-const chance = .05
-for (let i = 0; i < c.height; i++) {
-  const row = []
-  for (let j = 0; j < c.width; j++) {
-    if (Math.random() <= chance) {
-      row.push(j)
-    }
-  }
-  if (row[0]) {
-    seed[i] = row
   }
 }
-
-drawLife(seed)
-let alive = tick(seed)
-
-setInterval(() => {
-  drawLife(alive)
-  alive = tick(alive)
-}, 1);
