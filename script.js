@@ -86,46 +86,70 @@ const shouldCellLive = (...args) => {
 }
 
 /**
+ * Build a Set of all the cells that require a life check
+ * @param  {Object} alive  as above
+ * @param  {Number} width  Canvas width
+ * @param  {Number} height Canvas height
+ * @return {Set}           Set with a collection of 'X Y' pairs
+ */
+const buildSetToCheck = (alive, width, height) => {
+  // First build array with all possible values
+  const arrayToCheck = []
+  // Run through all rows
+  Object.keys(alive).forEach((stringY) => {
+    // Run through all cols
+    alive[stringY].forEach(x => {
+      // Convert string y to number
+      const y = Number(stringY)
+      // Get X West or East if at edge
+      const xLow = (x-1 >= 0) ? x-1 : width
+      // Get X East or West if at edge
+      const xHigh = (x+1 <= width) ? x+1 : 0
+      // Get Y North or South if at edge
+      const yLow = (y-1 >= 0) ? y-1 : height
+      // Get Y South or North if at edge
+      const yHigh = (y+1 <= height) ? y+1 : 0
+
+      // Set performance sucks with nested arrays so using string pairs
+      arrayToCheck.push(
+        // Row above
+        `${xLow} ${yLow}`, `${x} ${yLow}`, `${xHigh} ${yLow}`,
+        // Current row
+        `${xLow} ${y}`, `${x} ${y}`, `${xHigh} ${y}`,
+        // Row below
+        `${xLow} ${yHigh}`, `${x} ${yHigh}`,`${xHigh} ${yHigh}`
+      )
+    })
+  })
+  // Cull repeating coordinate pairs
+  return new Set(arrayToCheck)
+}
+
+/**
  * Build the tick's living cell coordinates
  * @param  {Object} alive Keys: y positions, values: arrays of live x positions
  * @return {Object} Keys: y positions, values: arrays of live x positions
  */
 const tick = (alive, width, height) => {
-  const arrayToCheck = []
-  Object.keys(alive).forEach((y) => {
-    alive[y].forEach(x => {
-      xLow = (x-1 >= 0) ? x - 1 : width
-      xHigh = (x+1 <= width) ? x + 1 : 0
-      yLow = (Number(y)-1 >= 0) ? Number(y)-1 : height
-      yHigh = (Number(y)+1 <= height) ? Number(y)+1 : 0
+  // Build none-repeating Set
+  const setToCheck = buildSetToCheck(alive, width, height);
 
-      arrayToCheck.push(`${xLow} ${yLow}`,
-        `${x} ${yLow}`,
-        `${xHigh} ${yLow}`,
-        `${xLow} ${y}`,
-        `${x} ${y}`,
-        `${xHigh} ${y}`,
-        `${xLow} ${yHigh}`,
-        `${x} ${yHigh}`,
-        `${xHigh} ${yHigh}`)
-    })
-  })
-
-  setToCheck = new Set(arrayToCheck)
-
-  const nextTick = [...setToCheck].reduce((acc, coord) => {
-    const [x, y] = coord.split(' ')
+  // Reduce to only live cells
+  return [...setToCheck].reduce((acc, coord) => {
+    // Split x/y string pairs into variables
+    const [x, y] = coord.split(' ');
+    // Check if alive
     if (shouldCellLive(alive, Number(x), Number(y), width, height)) {
+      // If row exists add to row
       if (acc[y]) {
         acc[y].push(Number(x))
+      // If row doesn't exist, build it
       } else {
         acc[y] = [Number(x)]
       }
     }
     return acc
   }, {})
-
-  return nextTick
 }
 
 /**
@@ -137,9 +161,9 @@ const tick = (alive, width, height) => {
  */
 const generateRandomSeed = (width, height, chance) => {
   // Initial an array of rows
-  return Array.from({length: height}, _ => {
+  return Array.from({length: height + 1}, _ => {
     // Fill each row with an initial array of numbered cols
-    return Array.from({length: width}, (x, index) => index)
+    return Array.from({length: width + 1}, (x, index) => index)
       // Filter the columns by chance
       .filter(x => Math.random() <= chance)
   })
@@ -157,5 +181,8 @@ if (typeof module !== 'undefined') {
     isCellAlive,
     countNeighbours,
     shouldCellLive,
+    buildSetToCheck,
+    tick,
+    generateRandomSeed,
   }
 }
