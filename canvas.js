@@ -13,10 +13,10 @@ const drawLife = (lifeObj) => {
   })
 }
 
-let alive = tick(generateRandomSeed(c.height, c.width, .1), c.width, c.height)
+let alive = tick(generateRandomSeed(c.height, c.width, .05), c.width, c.height)
 drawLife(alive)
 
 setInterval(() => {
   drawLife(alive)
   alive = tick(alive, c.width, c.height)
-}, 1000);
+}, 10);

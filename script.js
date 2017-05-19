@@ -43,20 +43,20 @@ const countNeighbours = (alive, x, y, width, height) => {
   // Check row above is greater than zero and has at least one live cell
   neighbours += (y > 0 && alive[y - 1]) ?
     // Count number of alive neighbours in row above
-    checkNeighboursX(alive[y - 1], x, width) :
+    checkNeighboursX(alive[y - 1], x, false, width) :
     // If row above is less than zero and has at least one live cell
     (y <= 0 && alive[height]) ?
     // Count number of alive neighbours in row on other end
-    checkNeighboursX(alive[height], x, width) : 0
+    checkNeighboursX(alive[height], x, false, width) : 0
 
   // If own row exists then check neighbours but not self
   neighbours += alive[y] ? checkNeighboursX(alive[y], x, true, width) : 0
 
   // Opposite of above
   neighbours += (y < height && alive[y + 1]) ?
-    checkNeighboursX(alive[y + 1], x, width) :
+    checkNeighboursX(alive[y + 1], x, false, width) :
     (y >= height-1 && alive[0]) ?
-    checkNeighboursX(alive[0], x, width) : 0
+    checkNeighboursX(alive[0], x, false, width) : 0
 
   return neighbours
 }
@@ -150,11 +150,12 @@ const generateRandomSeed = (width, height, chance) => {
   }, {})
 };
 
-
+/* istanbul ignore else */
 if (typeof module !== 'undefined') {
   module.exports = {
     checkNeighboursX,
     isCellAlive,
-
+    countNeighbours,
+    shouldCellLive,
   }
 }
